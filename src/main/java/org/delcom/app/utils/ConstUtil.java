@@ -8,4 +8,7 @@ public class ConstUtil {
     public static final String TEMPLATE_PAGES_AUTH_REGISTER = "pages/auth/register";
     public static final String TEMPLATE_PAGES_HOME = "pages/home";
     public static final String TEMPLATE_PAGES_TODOS_DETAIL = "pages/todos/detail";
+    
+    // --- TAMBAHKAN BARIS INI ---
+    public static final String TEMPLATE_PAGES_CASHFLOW_INDEX = "pages/cash-flows/index";
 }
