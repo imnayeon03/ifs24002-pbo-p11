@@ -8,94 +8,116 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spring Boot Todolist</title>
+    <title>Dashboard - Todo List</title>
   </head>
   <body>
-    <div layout:fragment="content" class="mt-3">
-      <div class="card">
-        <div class="card-header d-flex">
-          <div class="flex-fill">
-            <h3>Hay, [[${auth.name}]]</h3>
-          </div>
-          <div>
-            <div>
-              <a th:href="@{/auth/logout}" class="btn btn-sm btn-danger"
-                >Keluar</a
-              >
-            </div>
-          </div>
+    <div layout:fragment="content" class="mt-4">
+      
+      <!-- 1. Header & Navigasi Antar Fitur -->
+      <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded">
+        <div class="d-flex align-items-center gap-3">
+            <!-- Menu Navigasi -->
+            <a th:href="@{/}" class="btn btn-primary">
+                <i class="bi bi-list-check"></i> Todo List
+            </a>
+            <a th:href="@{/cash-flows}" class="btn btn-outline-success">
+                <i class="bi bi-wallet2"></i> Cash Flow
+            </a>
         </div>
-        <div class="card-body">
-          <div class="d-flex mb-2">
-            <div class="flex-fill">
-              <h3>Daftar Todo List</h3>
-            </div>
-            <div>
-              <button
-                class="btn btn-primary"
-                data-bs-toggle="modal"
-                data-bs-target="#addTodoModal"
-              >
-                Tambah Todo
-              </button>
-            </div>
-          </div>
-          <table class="table table-striped">
-            <tr class="table-light">
-              <th>No</th>
-              <th>Judul</th>
-              <th>Dibuat pada</th>
-              <th>Diubah pada</th>
-              <th>Status</th>
-              <th>Tindakan</th>
-            </tr>
+        
+        <div class="d-flex align-items-center gap-3">
+            <span class="fw-bold text-secondary">
+                <i class="bi bi-person-circle"></i> Hay, [[${auth.name}]]
+            </span>
+            <a th:href="@{/auth/logout}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-box-arrow-right"></i> Keluar
+            </a>
+        </div>
+      </div>
 
-            <tr th:each="todo, status : ${todos}">
-              <td th:text="${status.index + 1}"></td>
-              <td th:text="${todo.title}"></td>
-              <td
-                th:text="${#temporals.format(todo.createdAt, 'd MMMM yyyy, HH:mm')}"
-              ></td>
-              <td
-                th:text="${#temporals.format(todo.updatedAt, 'd MMMM yyyy, HH:mm')}"
-              ></td>
-              <td>
-                <span th:if="${todo.finished}" class="badge bg-success"
-                  >Selesai</span
-                >
-                <span th:unless="${todo.finished}" class="badge bg-danger"
-                  >Belum selesai</span
-                >
-              </td>
-              <td>
-                <a
-                  th:href="@{/todos/{todoId}(todoId=${todo.id})}"
-                  class="btn btn-sm btn-info"
-                >
-                  Detail
-                </a>
-                <button
-                  th:id="|editTodoButton_${todo.id}|"
-                  th:attr="onclick=|prepareEditTodo(`${todo.id}`, `${todo.title}`, `${todo.description}`, ${todo.finished})|"
-                  class="btn btn-sm btn-warning"
-                >
-                  Edit
-                </button>
-                <button
-                  th:id="|deleteTodoButton_${todo.id}|"
-                  th:attr="onclick=|prepareDeleteTodo(`${todo.id}`, `${todo.title}`)|"
-                  class="btn btn-sm btn-danger"
-                >
-                  Hapus
-                </button>
-              </td>
-            </tr>
-            <tr th:if="${#lists.isEmpty(todos)}">
-              <td colspan="6" class="text-center">
-                Belum ada data todo yang tersedia.
-              </td>
-            </tr>
-          </table>
+      <!-- 2. Notifikasi (Alerts) -->
+      <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <!-- 3. Konten Utama (Todo List) -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Daftar Todo List</h5>
+          <button
+            class="btn btn-light btn-sm text-primary fw-bold"
+            data-bs-toggle="modal"
+            data-bs-target="#addTodoModal"
+          >
+            <i class="bi bi-plus-lg"></i> Tambah Todo
+          </button>
+        </div>
+        
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-4">No</th>
+                  <th>Judul</th>
+                  <th>Dibuat pada</th>
+                  <th>Status</th>
+                  <th class="text-center">Tindakan</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="todo, status : ${todos}">
+                  <td class="ps-4" th:text="${status.index + 1}"></td>
+                  <td>
+                    <span th:text="${todo.title}" class="fw-bold d-block"></span>
+                    <small class="text-muted" th:text="${#strings.abbreviate(todo.description, 50)}"></small>
+                  </td>
+                  <td>
+                    <small class="d-block text-muted">Dibuat: <span th:text="${#temporals.format(todo.createdAt, 'dd MMM yyyy, HH:mm')}"></span></small>
+                    <small class="d-block text-muted" th:if="${todo.updatedAt != todo.createdAt}">Diubah: <span th:text="${#temporals.format(todo.updatedAt, 'dd MMM yyyy, HH:mm')}"></span></small>
+                  </td>
+                  <td>
+                    <span th:if="${todo.finished}" class="badge bg-success rounded-pill">
+                        <i class="bi bi-check-circle"></i> Selesai
+                    </span>
+                    <span th:unless="${todo.finished}" class="badge bg-warning text-dark rounded-pill">
+                        <i class="bi bi-hourglass-split"></i> Proses
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                        <a th:href="@{/todos/{todoId}(todoId=${todo.id})}" class="btn btn-outline-info" title="Detail">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                        <button
+                          th:id="|editTodoButton_${todo.id}|"
+                          th:attr="onclick=|prepareEditTodo(`${todo.id}`, `${todo.title}`, `${todo.description}`, ${todo.finished})|"
+                          class="btn btn-outline-warning" title="Edit">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button
+                          th:id="|deleteTodoButton_${todo.id}|"
+                          th:attr="onclick=|prepareDeleteTodo(`${todo.id}`, `${todo.title}`)|"
+                          class="btn btn-outline-danger" title="Hapus">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(todos)}">
+                  <td colspan="5" class="text-center py-5 text-muted">
+                    <i class="bi bi-clipboard-x display-4 d-block mb-3"></i>
+                    Belum ada data todo yang tersedia.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -109,12 +131,15 @@
     <script layout:fragment="others-js">
       function prepareEditTodo(id, title, description, finished) {
         /* Set nilai pada form edit */
-        document.getElementById("editTodoId").value = id;
-        document.getElementById("editTodoTitle").value = title;
-        document.getElementById("editTodoDescription").value = description;
-        document.getElementById("editTodoFinished").value = finished
-          ? "1"
-          : "0";
+        const elId = document.getElementById("editTodoId");
+        const elTitle = document.getElementById("editTodoTitle");
+        const elDesc = document.getElementById("editTodoDescription");
+        const elFin = document.getElementById("editTodoFinished");
+
+        if(elId) elId.value = id;
+        if(elTitle) elTitle.value = title;
+        if(elDesc) elDesc.value = description;
+        if(elFin) elFin.value = finished ? "1" : "0";
 
         /* Tampilkan modal */
         var editModal = new bootstrap.Modal(
@@ -125,8 +150,11 @@
 
       function prepareDeleteTodo(id, title) {
         /* Set nilai pada form delete */
-        document.getElementById("deleteTodoId").value = id;
-        document.getElementById("deleteTodoTitle").innerText = title;
+        const elId = document.getElementById("deleteTodoId");
+        const elTitle = document.getElementById("deleteTodoTitle");
+
+        if(elId) elId.value = id;
+        if(elTitle) elTitle.innerText = title;
 
         /* Tampilkan modal */
         var deleteModal = new bootstrap.Modal(
