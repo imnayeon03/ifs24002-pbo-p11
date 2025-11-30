@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/base}">
+
+<head>
+    <title>Dompetku - Cash Flow</title>
+</head>
+
+<body>
+<div layout:fragment="content" class="mt-4">
+    
+    <!-- 1. HEADER & NAVIGASI -->
+    <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm rounded">
+        <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/}" class="btn btn-outline-primary">
+                <i class="bi bi-list-check"></i> Todo List
+            </a>
+            <a th:href="@{/cash-flows}" class="btn btn-success">
+                <i class="bi bi-wallet2"></i> Cash Flow
+            </a>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+            <span class="fw-bold text-secondary">
+                <i class="bi bi-person-circle"></i> Hay, [[${auth.name}]]
+            </span>
+            <a th:href="@{/auth/logout}" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-box-arrow-right"></i> Keluar
+            </a>
+        </div>
+    </div>
+
+    <div class="container-fluid px-0">
+        <!-- Header Judul -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h2 class="fw-bold">Dompetku <span class="text-muted fs-5">| Catatan Keuangan</span></h2>
+            </div>
+            
+            <!-- Cards Summary -->
+            <div class="col-md-4">
+                <div class="card bg-success text-white shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title opacity-75">Total Pemasukan</h6>
+                        <h3 class="fw-bold" th:text="'Rp ' + ${#numbers.formatDecimal(totalIncome, 0, 'POINT', 0, 'COMMA')}">Rp 0</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card bg-danger text-white shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title opacity-75">Total Pengeluaran</h6>
+                        <h3 class="fw-bold" th:text="'Rp ' + ${#numbers.formatDecimal(totalExpense, 0, 'POINT', 0, 'COMMA')}">Rp 0</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card bg-primary text-white shadow-sm mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title opacity-75">Sisa Saldo</h6>
+                        <h3 class="fw-bold" th:text="'Rp ' + ${#numbers.formatDecimal(balance, 0, 'POINT', 0, 'COMMA')}">Rp 0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-8">
+                <form th:action="@{/cash-flows}" method="get" class="d-flex gap-2">
+                    <input type="text" name="search" class="form-control" placeholder="Cari transaksi..." th:value="${param.search}">
+                    <button type="submit" class="btn btn-outline-secondary">Cari</button>
+                </form>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <button class="btn btn-dark w-100" data-bs-toggle="modal" data-bs-target="#addModal">
+                    <i class="bi bi-plus-lg"></i> Tambah Transaksi
+                </button>
+            </div>
+        </div>
+
+        <!-- List Data -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold">Riwayat Transaksi</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <div th:each="item : ${cashFlows}" class="list-group-item list-group-item-action py-3">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                 th:classappend="${item.type == 'PEMASUKAN' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'}"
+                                 style="width: 48px; height: 48px;">
+                                <i class="bi" th:classappend="${item.type == 'PEMASUKAN' ? 'bi-arrow-down-left' : 'bi-arrow-up-right'}"></i>
+                            </div>
+                            
+                            <div>
+                                <h6 class="mb-1 fw-bold" th:text="${item.label}">Label</h6>
+                                <small class="text-muted">
+                                    <span th:text="${item.source}">Source</span> &bull; 
+                                    <span th:text="${#temporals.format(item.createdAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                                </small>
+                                <div th:if="${item.description}" class="small text-muted fst-italic mt-1" th:text="${item.description}"></div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <h5 class="fw-bold mb-1" 
+                                th:classappend="${item.type == 'PEMASUKAN' ? 'text-success' : 'text-danger'}"
+                                th:text="${item.type == 'PEMASUKAN' ? '+' : '-'} + ' Rp ' + ${#numbers.formatDecimal(item.amount, 0, 'POINT', 0, 'COMMA')}">
+                                0
+                            </h5>
+                            
+                            <div class="btn-group btn-group-sm mt-2">
+                                <button type="button" class="btn btn-light text-primary"
+                                        th:onclick="openEditModal([[${item.id}]], [[${item.type}]], [[${item.source}]], [[${item.label}]], [[${item.amount}]], [[${item.description}]])">
+                                    Edit
+                                </button>
+                                <button type="button" class="btn btn-light text-danger"
+                                        th:onclick="openDeleteModal([[${item.id}]], [[${item.label}]])">
+                                    Hapus
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${cashFlows.isEmpty()}" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">Belum ada transaksi.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= MODALS (FIXED: Menggunakan th:action) ================= -->
+
+    <!-- 1. Modal Tambah -->
+    <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- Perbaikan disini: th:action="@{...}" -->
+                <form th:action="@{/cash-flows/add}" method="post" th:object="${cashFlowForm}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Tambah Transaksi Baru</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Tipe Transaksi</label>
+                            <select class="form-select" th:field="*{type}">
+                                <option value="PEMASUKAN">Pemasukan (Income)</option>
+                                <option value="PENGELUARAN">Pengeluaran (Expense)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sumber Dana</label>
+                            <select class="form-select" th:field="*{source}">
+                                <option value="Cash">Cash / Tunai</option>
+                                <option value="Bank BCA">Bank BCA</option>
+                                <option value="Bank Mandiri">Bank Mandiri</option>
+                                <option value="GoPay">GoPay</option>
+                                <option value="OVO">OVO</option>
+                                <option value="ShopeePay">ShopeePay</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Judul / Label</label>
+                            <input type="text" class="form-control" th:field="*{label}" placeholder="Contoh: Gaji, Makan Siang" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nominal (Rp)</label>
+                            <input type="number" class="form-control" th:field="*{amount}" min="1" placeholder="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Deskripsi</label>
+                            <textarea class="form-control" th:field="*{description}" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Modal Edit -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- Perbaikan disini: th:action="@{...}" -->
+                <form th:action="@{/cash-flows/edit}" method="post" th:object="${cashFlowForm}">
+                    <input type="hidden" id="editId" th:field="*{id}">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Transaksi</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Tipe Transaksi</label>
+                            <select id="editType" class="form-select" th:field="*{type}">
+                                <option value="PEMASUKAN">Pemasukan</option>
+                                <option value="PENGELUARAN">Pengeluaran</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Sumber Dana</label>
+                            <select id="editSource" class="form-select" th:field="*{source}">
+                                <option value="Cash">Cash</option>
+                                <option value="Bank BCA">Bank BCA</option>
+                                <option value="Bank Mandiri">Bank Mandiri</option>
+                                <option value="GoPay">GoPay</option>
+                                <option value="OVO">OVO</option>
+                                <option value="ShopeePay">ShopeePay</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Label</label>
+                            <input type="text" id="editLabel" class="form-control" th:field="*{label}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nominal</label>
+                            <input type="number" id="editAmount" class="form-control" th:field="*{amount}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Deskripsi</label>
+                            <textarea id="editDescription" class="form-control" th:field="*{description}"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Modal Delete -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- Perbaikan disini: th:action="@{...}" -->
+                <form th:action="@{/cash-flows/delete}" method="post" th:object="${cashFlowForm}">
+                    <input type="hidden" id="deleteId" th:field="*{id}">
+                    
+                    <div class="modal-header">
+                        <h5 class="modal-title text-danger">Hapus Transaksi</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Apakah Anda yakin ingin menghapus transaksi ini?</p>
+                        <p class="fw-bold" id="deleteLabelDisplay">Nama Label</p>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Ketik ulang label transaksi untuk konfirmasi:</label>
+                            <input type="text" class="form-control" th:field="*{confirmLabel}" placeholder="Ketik label di sini..." required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger">Ya, Hapus</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function openEditModal(id, type, source, label, amount, description) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editType').value = type;
+            document.getElementById('editSource').value = source;
+            document.getElementById('editLabel').value = label;
+            document.getElementById('editAmount').value = amount;
+            document.getElementById('editDescription').value = description || '';
+            
+            var modal = new bootstrap.Modal(document.getElementById('editModal'));
+            modal.show();
+        }
+
+        function openDeleteModal(id, label) {
+            document.getElementById('deleteId').value = id;
+            document.getElementById('deleteLabelDisplay').innerText = label;
+            
+            var modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            /*<![CDATA[*/
+                var addModalOpen = /*[[${addModalOpen}]]*/ false;
+                var editModalOpen = /*[[${editModalOpen}]]*/ false;
+                var deleteModalOpen = /*[[${deleteModalOpen}]]*/ false;
+                var editModalId = /*[[${editModalId}]]*/ null;
+                var deleteModalId = /*[[${deleteModalId}]]*/ null;
+            /*]]>*/
+
+            if (addModalOpen) {
+                new bootstrap.Modal(document.getElementById('addModal')).show();
+            }
+            if (editModalOpen) {
+                new bootstrap.Modal(document.getElementById('editModal')).show();
+                if(editModalId) document.getElementById('editId').value = editModalId;
+            }
+            if (deleteModalOpen) {
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+                if(deleteModalId) document.getElementById('deleteId').value = deleteModalId;
+            }
+        });
+    </script>
+
+</div>
+</body>
+</html>
